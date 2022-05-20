@@ -22,8 +22,10 @@ public:
 
 private slots:
     void on_selectImpushButton_clicked();
-    void saveToFile();
+    void saveToFile(QString file);
     void readFromFile();
+
+    void on_pushButton_clicked();
 
 private:
     Ui::MainWindow *ui;
