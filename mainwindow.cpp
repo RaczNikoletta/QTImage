@@ -11,6 +11,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     //ui->listView->setSelectionMode(QAbstractItemView::ExtendedSelection); //you can select any number of items
     model = new QStringListModel(this);
+    readFromFile();
     ui->setupUi(this);
     model->setStringList(list);
     ui->listView->setModel(model);
@@ -49,15 +50,63 @@ void MainWindow::saveToFile(QString file)
    }else
        qDebug() << "Failed to open file";
 
+    pathFile.close();
+
 
 }
 
 void MainWindow::readFromFile()
 {
-    QFileInfo inf (pathFile);
-    qDebug() << "File path: " << inf.QFileInfo::path() << endl;
-    qDebug() << "Current path:" << QDir::currentPath() << endl;
 
+    const QString path("imagePaths.txt");
+    QFile pathFile(path);
+    if(pathFile.open(QIODevice::ReadOnly)){
+        //qDebug() << "open";
+        QTextStream textStream(&pathFile);
+        while(true){
+            //qDebug() << "in while";
+            QString line = textStream.readLine();
+            if(line.isNull())
+                break;
+            else{
+                list.append(line);
+                //qDebug() << line;
+                QModelIndex index = model->index(model->rowCount()-1);
+                model->setData(index,line);
+            }
+        }
+    }else
+        qDebug() << "Failed to open file";
+     pathFile.close();
+}
+
+void MainWindow::deleteFromFile(QString text)
+{
+
+    const QString path("imagePaths.txt");
+    QFile pathFile(path);
+    if(pathFile.open(QIODevice::ReadWrite | QIODevice::Append)){
+        //qDebug() << "open";
+        QTextStream textStream(&pathFile);
+        while(true){
+            //qDebug() << "in while";
+            QString line = textStream.readLine();
+
+            if(line.isNull())
+                break;
+            else{
+                if(line !=text){
+                    list.append(line+ "\n");
+                    QModelIndex index = model->index(model->rowCount()-1);
+                    model->setData(index,line);
+                }
+                //qDebug() << line;
+            }
+       }
+    }else
+        qDebug() << "Failed to open file";
+    pathFile.resize(0);
+    pathFile.close();
 }
 
 
@@ -71,5 +120,15 @@ void MainWindow::on_pushButton_clicked()
     QString itemText = index.data(Qt::DisplayRole).toString();
     saveToFile(itemText);
 
+}
+
+
+void MainWindow::on_deleteButton_clicked()
+{
+    QModelIndex index = ui->listView->currentIndex();
+    QString itemText = index.data(Qt::DisplayRole).toString();
+    model->removeRow(index.row());
+    list.removeAt(index.row());
+    deleteFromFile(itemText);
 }
 
