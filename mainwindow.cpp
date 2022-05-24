@@ -45,12 +45,27 @@ void MainWindow::saveToFile(QString file)
 {
    const QString path("imagePaths.txt");
    QFile pathFile(path);
-   if(pathFile.open(QIODevice::WriteOnly | QIODevice::Append)){
-       QTextStream out(&pathFile); out << file+"\n";
+   QTextStream textStream(&pathFile);
+   if(pathFile.open(QIODevice::ReadWrite | QIODevice::Append)){
+       while(!pathFile.atEnd()){
+           QString line = textStream.readLine();
+           if(line.isNull()){
+               break;
+           }
+           else if(QString::compare(file,line)==0){
+               fileExists = true;
+           }
+       }
+       if(!fileExists){
+        textStream << file+"\n";
+       }
+
    }else
        qDebug() << "Failed to open file";
 
-    pathFile.close();
+   fileExists = false;
+   pathFile.close();
+
 
 
 }
@@ -66,47 +81,45 @@ void MainWindow::readFromFile()
         while(true){
             //qDebug() << "in while";
             QString line = textStream.readLine();
-            if(line.isNull())
+            if(line.isNull()){
                 break;
-            else{
+            }
+            else if(line!=""){
                 list.append(line);
-                //qDebug() << line;
+                qDebug() << line;
                 QModelIndex index = model->index(model->rowCount()-1);
                 model->setData(index,line);
             }
         }
     }else
         qDebug() << "Failed to open file";
-     pathFile.close();
 }
 
 void MainWindow::deleteFromFile(QString text)
 {
 
     const QString path("imagePaths.txt");
-    QFile pathFile(path);
-    if(pathFile.open(QIODevice::ReadWrite | QIODevice::Append)){
-        //qDebug() << "open";
-        QTextStream textStream(&pathFile);
-        while(true){
-            //qDebug() << "in while";
-            QString line = textStream.readLine();
+       QFile pathFile(path);
+       if(pathFile.open(QIODevice::ReadWrite | QIODevice::Text)){
+           //qDebug() << "open";
+           QString s;
+           QTextStream textStream(&pathFile);
+           while(!textStream.atEnd()){
+               //qDebug() << "in while";
+               QString line = textStream.readLine();
+                   if(line !=text){
+                       s.append(line+"\n");
+                       QModelIndex index = model->index(model->rowCount()-1);
+                       model->setData(index,line);
+                   }
+                   //qDebug() << line;
+               }
 
-            if(line.isNull())
-                break;
-            else{
-                if(line !=text){
-                    list.append(line+ "\n");
-                    QModelIndex index = model->index(model->rowCount()-1);
-                    model->setData(index,line);
-                }
-                //qDebug() << line;
-            }
+       pathFile.resize(0);
+       textStream << s;
+       pathFile.close();
        }
-    }else
-        qDebug() << "Failed to open file";
-    pathFile.resize(0);
-    pathFile.close();
+
 }
 
 
@@ -130,5 +143,14 @@ void MainWindow::on_deleteButton_clicked()
     model->removeRow(index.row());
     list.removeAt(index.row());
     deleteFromFile(itemText);
+}
+
+
+void MainWindow::on_listView_clicked(const QModelIndex &index)
+{
+    QString itemText = index.data(Qt::DisplayRole).toString();
+    QPixmap pixmap(itemText);
+    ui->picturelabel->setPixmap(pixmap.scaled(ui->picturelabel->size(), Qt::KeepAspectRatio));
+    ui->picturelabel->setAlignment(Qt::AlignCenter);
 }
 

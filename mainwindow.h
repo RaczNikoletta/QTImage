@@ -30,11 +30,14 @@ private slots:
 
     void on_deleteButton_clicked();
 
+    void on_listView_clicked(const QModelIndex &index);
+
 private:
     Ui::MainWindow *ui;
     QString selectedImagePath="";
     QStringList list;
     QStringListModel *model;
-     QFile pathFile;
+    QFile pathFile;
+    bool fileExists;
 };
 #endif // MAINWINDOW_H
