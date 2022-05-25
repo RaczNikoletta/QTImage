@@ -13,12 +13,37 @@ MainWindow::MainWindow(QWidget *parent)
     model = new QStringListModel(this);
     readFromFile();
     ui->setupUi(this);
-    model->setStringList(list);
-    ui->listView->setModel(model);
+    openDatabase("db.sqlite");
+    fillIamgeList();
+
+    /*addImage=QSqlQuery(db);
+    addImage.prepare("INSERT INTO image (path, tag, comment) VALUES (:path, :tag, :comment)");
+    addImage.bindValue(":path","random");
+    addImage.bindValue(":tag", "tag");
+    addImage.bindValue(":comment", "comment");
+                     if (addImage.exec())
+                     {
+                     }
+                     else
+                     {
+                         qDebug() << addImage.lastError();
+                     }*/
+
+   imageTableModel = new QSqlTableModel(this,db);
+   imageTableModel->setTable("image");
+   imageTableModel->setHeaderData(0,Qt::Horizontal,"Path");
+   imageTableModel->setHeaderData(1,Qt::Horizontal,"Tag");
+   imageTableModel->setHeaderData(2,Qt::Horizontal,"Comment");
+   imageTableModel->select();
+   ui->listView->setModel(imageTableModel);
+   connect(imageTableModel,&QSqlTableModel::dataChanged,this,&MainWindow::imageDataChanged);
+   model->setStringList(list);
+    //ui->listView->setModel(model);
 }
 
 MainWindow::~MainWindow()
 {
+    db.close();
     delete ui;
 }
 
@@ -129,7 +154,7 @@ void MainWindow::on_pushButton_clicked()
             ui->listView->selectionModel()->selectedIndexes())
         saveToFile(model->itemFromIndex(index)->text());
         */ //selected elements can be more than one
-    QModelIndex index = ui->listView->currentIndex();
+    QModelIndex index = ui->listWidget->currentIndex();
     QString itemText = index.data(Qt::DisplayRole).toString();
     saveToFile(itemText);
 
@@ -138,7 +163,7 @@ void MainWindow::on_pushButton_clicked()
 
 void MainWindow::on_deleteButton_clicked()
 {
-    QModelIndex index = ui->listView->currentIndex();
+    QModelIndex index = ui->listWidget->currentIndex();
     QString itemText = index.data(Qt::DisplayRole).toString();
     model->removeRow(index.row());
     list.removeAt(index.row());
@@ -152,5 +177,82 @@ void MainWindow::on_listView_clicked(const QModelIndex &index)
     QPixmap pixmap(itemText);
     ui->picturelabel->setPixmap(pixmap.scaled(ui->picturelabel->size(), Qt::KeepAspectRatio));
     ui->picturelabel->setAlignment(Qt::AlignCenter);
+}
+
+void MainWindow::openDatabase(const QString &filename)
+{
+    db = QSqlDatabase::addDatabase("QSQLITE");
+    db.setDatabaseName(filename);
+
+    if(db.open()){
+        qDebug() << "DB opened";
+        if(db.tables().size()==0)
+        {
+            qDebug() << "DB is empty";
+            initializeDatabase();
+        }else{
+            //addImage.prepare("INSERT INTO image (path, tag, comment) VALUES (:path, :tag, :comment)");
+
+        }
+    }else
+    {
+        qDebug() << "DB open error";
+    }
+
+}
+
+void MainWindow::initializeDatabase()
+{
+    QSqlQuery query(db);
+    for(QString tablename: db.tables())
+    {
+        query.exec("DROP TABLE " + tablename);
+    }
+    if(!query.exec("CREATE TABLE image (path VARCHAR(100) PRIMARY KEY, tag TEXT, comment TEXT)"))
+    {
+        qDebug() << "ERROR create image table" << query.lastError();
+    }
+
+
+}
+
+void MainWindow::fillIamgeList()
+{
+    int i = 0;
+    qDebug() << " "+ i;
+    imageList.clear();
+    ui->listWidget->clear();
+    QSqlQuery query(db);
+    query.exec("SELECT * FROM image");
+    while(query.next())
+    {
+        i++;
+        qDebug() << " "+ i;
+        ui->listWidget->addItem(query.value("path").toString());
+        imageList.push_back(Image(query.value("path").toString(),
+                                  query.value("tag").toString(),
+                                  query.value("comment").toString()));
+    }
+    ui->listWidget->setCurrentRow(0);
+}
+
+void MainWindow::imageDataChanged(const QModelIndex &,const QModelIndex &)
+{
+    fillIamgeList();
+}
+
+
+void MainWindow::on_listWidget_currentRowChanged(int currentRow)
+{
+    if(currentRow!=-1){
+        ui->tagLabel->setText(imageList.at(currentRow).tag);
+        ui->commentLabel->setText(imageList.at(currentRow).comment);
+    }
+    else{
+        ui->tagLabel->clear();
+        ui->commentLabel->clear();
+       }
+
+
 }
 
