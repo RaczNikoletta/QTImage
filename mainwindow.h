@@ -39,8 +39,7 @@ public:
 
 private slots:
     void on_selectImpushButton_clicked();
-    void saveToFile(QString file);
-    void readFromFile();
+    void saveToDatabase(QString file);
     void deleteFromFile(QString text);
 
     void on_pushButton_clicked();
@@ -51,7 +50,9 @@ private slots:
 
 
 
-    void on_listWidget_currentRowChanged(int currentRow);
+    //void on_listWidget_currentRowChanged(int currentRow);
+
+    void on_pushButton_2_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -63,14 +64,17 @@ private:
     QList<Image> imageList;
     QSqlDatabase db;
     QSqlQuery addImage;
+    QSqlQuery deleteUnsaved;
     QSqlQueryModel imageListModel;
+    QList<bool>saved;
+    int curRow;
 
     QSqlTableModel *imageTableModel;
 
 
     void openDatabase(const QString &filename);
     void initializeDatabase();
-    void fillIamgeList();
+    void fillIamgeList(bool init=false);
     void imageDataChanged(const QModelIndex &topLeft,const QModelIndex &bottomRight);
 };
 #endif // MAINWINDOW_H
