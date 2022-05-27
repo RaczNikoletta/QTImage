@@ -13,6 +13,8 @@
 #include <QSqlTableModel>
 #include <QSqlRelationalTableModel>
 #include <QSqlRelationalDelegate>
+#include <QListWidgetItem>
+#include <QItemSelectionModel>
 using namespace std;
 
 QT_BEGIN_NAMESPACE
@@ -58,6 +60,15 @@ private slots:
 
     void on_lineEdit_textEdited(const QString &arg1);
 
+    void on_listWidget_itemDoubleClicked(QListWidgetItem *item);
+
+    void on_pushButton_3_clicked();
+
+    void on_nextButton_clicked();
+
+    void on_backButton_clicked();
+
+
 private:
     Ui::MainWindow *ui;
     QString selectedImagePath="";
@@ -72,6 +83,7 @@ private:
     QSqlQuery deleteUnsaved;
     QSqlQueryModel imageListModel;
     QSqlQueryModel searchListModel;
+    QItemSelectionModel *selectionModel;
     QList<bool>saved;
     int curRow;
 
@@ -82,5 +94,6 @@ private:
     void initializeDatabase();
     void fillIamgeList(bool init=false);
     void imageDataChanged(const QModelIndex &topLeft,const QModelIndex &bottomRight);
+    void rowChanged(const QModelIndex &current, const QModelIndex &previous);
 };
 #endif // MAINWINDOW_H

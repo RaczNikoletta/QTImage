@@ -4,6 +4,8 @@
 #include <QDebug>
 #include <iostream>
 #include <fstream>
+#include <QVBoxLayout>
+#include <QCommonStyle>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -14,7 +16,11 @@ MainWindow::MainWindow(QWidget *parent)
     //readFromFile();
     ui->setupUi(this);
     openDatabase("db.sqlite");
+    QCommonStyle style;
+    ui->backButton->setIcon(style.standardIcon(QStyle::SP_ArrowLeft));
+    ui->nextButton->setIcon(style.standardIcon(QStyle::SP_ArrowRight));
     fillIamgeList(true);
+
 
     addImage=QSqlQuery(db);
     addImage.prepare("INSERT INTO image (path, tag, comment) VALUES (:path, :tag, :comment)");
@@ -40,12 +46,15 @@ MainWindow::MainWindow(QWidget *parent)
    imageTableModel->setHeaderData(2,Qt::Horizontal,"Comment");
    imageTableModel->select();
    ui->listView->setModel(imageTableModel);
+   selectionModel = ui->listView->selectionModel();
+
+   connect(selectionModel,&QItemSelectionModel::currentChanged,this,&MainWindow::rowChanged);
    connect(imageTableModel,&QSqlTableModel::dataChanged,this,&MainWindow::imageDataChanged);
 
    searchListModel.setHeaderData(0,Qt::Horizontal,"Path");
    searchListModel.setHeaderData(1,Qt::Horizontal,"Tag");
    searchListModel.setHeaderData(2,Qt::Horizontal,"Comment");
-   ui->searchList->setModel(&searchListModel);
+   //ui->searchList->setModel(&searchListModel);
    //connect(imageTableModel,&QSqlTableModel::dataChanged,this,&MainWindow::imageDataChanged);
    //model->setStringList(list);
     //ui->listView->setModel(model);
@@ -353,4 +362,95 @@ void MainWindow::on_lineEdit_textEdited(const QString &arg1)
     }
 
 }
+
+
+void MainWindow::on_listWidget_itemDoubleClicked(QListWidgetItem *item)
+{
+    QWidget *window = new QWidget;
+    //QPushButton *button1 = new QPushButton("One");
+    QLabel *imageLabel = new QLabel;
+    QString itemText =item->text();
+    QPixmap pixmap(itemText);
+    imageLabel->setPixmap(pixmap);
+    imageLabel->setScaledContents(true);
+    imageLabel->setAlignment(Qt::AlignCenter);
+
+    QVBoxLayout *layout = new QVBoxLayout;
+    layout->addWidget(imageLabel);
+    //layout->addWidget(button1);
+
+    window->setLayout(layout);
+    window->show();
+}
+
+
+void MainWindow::on_pushButton_3_clicked()
+{
+    QWidget *window = new QWidget;
+    //QPushButton *button1 = new QPushButton("One");
+    QLabel *imageLabel = new QLabel;
+    QListWidgetItem *item = ui->listWidget->currentItem();
+    QString itemText =item->text();
+    QPixmap pixmap(itemText);
+    imageLabel->setPixmap(pixmap);
+    imageLabel->setScaledContents(true);
+    imageLabel->setAlignment(Qt::AlignCenter);
+
+    QVBoxLayout *layout = new QVBoxLayout;
+    layout->addWidget(imageLabel);
+    //layout->addWidget(button1);
+
+    window->setLayout(layout);
+    window->show();
+}
+
+
+void MainWindow::on_nextButton_clicked()
+{
+
+    if(ui->listView->currentIndex().row()!=(imageList.size()-1))
+    {
+        ui->listView->setCurrentIndex(ui->listView->currentIndex().siblingAtRow(ui->listView->currentIndex().row()+1));
+    }else
+    {
+        ui->listView->setCurrentIndex(ui->listView->currentIndex().siblingAtRow(0));
+    }
+}
+
+
+void MainWindow::on_backButton_clicked()
+{
+    if(ui->listView->currentIndex().row()!=0)
+    {
+        ui->listView->setCurrentIndex(ui->listView->currentIndex().siblingAtRow(ui->listView->currentIndex().row()-1));
+    }else
+    {
+          ui->listView->setCurrentIndex(ui->listView->currentIndex().siblingAtRow(imageList.size()-1));
+    }
+
+}
+
+void MainWindow::rowChanged(const QModelIndex &current, const QModelIndex &previous)
+{
+    if(current.row()!=-1){
+        ui->tagLabel->setText(imageList.at(current.row()).tag);
+        ui->commentLabel->setText(imageList.at(current.row()).comment);
+        curRow = current.row();
+
+        QString itemText = imageList.at(current.row()).path;
+        QPixmap pixmap(itemText);
+        ui->picturelabel->setPixmap(pixmap.scaled(ui->picturelabel->size(), Qt::KeepAspectRatio));
+        ui->picturelabel->setAlignment(Qt::AlignCenter);
+    }
+    else{
+        ui->tagLabel->clear();
+        ui->commentLabel->clear();
+       }
+}
+
+
+
+
+
+
 
