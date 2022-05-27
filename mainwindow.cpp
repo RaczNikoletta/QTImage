@@ -41,6 +41,12 @@ MainWindow::MainWindow(QWidget *parent)
    imageTableModel->select();
    ui->listView->setModel(imageTableModel);
    connect(imageTableModel,&QSqlTableModel::dataChanged,this,&MainWindow::imageDataChanged);
+
+   searchListModel.setHeaderData(0,Qt::Horizontal,"Path");
+   searchListModel.setHeaderData(1,Qt::Horizontal,"Tag");
+   searchListModel.setHeaderData(2,Qt::Horizontal,"Comment");
+   ui->searchList->setModel(&searchListModel);
+   //connect(imageTableModel,&QSqlTableModel::dataChanged,this,&MainWindow::imageDataChanged);
    //model->setStringList(list);
     //ui->listView->setModel(model);
 }
@@ -246,6 +252,7 @@ void MainWindow::fillIamgeList(bool init)
 void MainWindow::imageDataChanged(const QModelIndex &,const QModelIndex &)
 {
     fillIamgeList();
+
 }
 
 
@@ -279,5 +286,71 @@ void MainWindow::on_pushButton_2_clicked()
     {
         qDebug () << "DB update failed " << deleteUnsaved.lastError();
     }
+}
+
+
+void MainWindow::on_lineEdit_textChanged(const QString &arg1)
+{
+    /*QMutableListIterator<Image> i(imageList);
+    while(i.hasNext())
+    {
+        if(i.next().tag.contains(ui->lineEdit->text()))
+        {
+            qDebug () << "Remove: " << i.next().tag;
+            i.remove();
+            for(int j=0;j<imageList.size();j++)
+            {
+                qDebug () << "Tag: " << imageList.at(j).tag;
+            }
+
+        }else
+        {
+            //fillIamgeList();
+            //imageTableModel->select();
+        }
+    }
+
+    while(i.hasNext())
+    {
+        tempList.push_back(i.next().path);
+    }
+    model->setStringList(tempList);
+    ui->listView->setModel(model);
+
+    //imageTableModel->select();*/
+}
+
+
+void MainWindow::on_lineEdit_textEdited(const QString &arg1)
+{
+    searchList.clear();
+    ui->listWidget->clear();
+    QSqlQuery query(db);
+    //int i =0;
+    query.prepare("SELECT * FROM image WHERE path LIKE :argum or tag LIKE :argum or comment LIKE :argum");
+    query.bindValue(":argum",QString("%%1%").arg(arg1));
+    QString toFind = QString("%%1%").arg(arg1);
+    //searchListModel.setQuery("SELECT * FROM image WHERE path LIKE '"+QString("%%1%").arg(arg1)+"' or tag LIKE '"+QString("%%1%").arg(arg1)+"' or comment LIKE "+QString("%%1%").arg(arg1)+"");
+    if(query.exec()){
+        //qDebug() << "Query ok";
+    while(query.next())
+    {
+        //i++;
+        //qDebug() << i;
+        ui->listWidget->addItem(query.value("path").toString());
+        searchList.push_back(Image(query.value("path").toString(),
+                                  query.value("tag").toString(),
+                                  query.value("comment").toString()));
+    }
+    }else
+    {
+        qDebug() << "Query failed: " << query.lastError();
+    }
+    //qDebug() << searchList.size();
+    //searchTableModel->select();
+    if(ui->lineEdit->text()==""){
+           ui->listWidget->clear();
+    }
+
 }
 

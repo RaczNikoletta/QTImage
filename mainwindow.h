@@ -54,6 +54,10 @@ private slots:
 
     void on_pushButton_2_clicked();
 
+    void on_lineEdit_textChanged(const QString &arg1);
+
+    void on_lineEdit_textEdited(const QString &arg1);
+
 private:
     Ui::MainWindow *ui;
     QString selectedImagePath="";
@@ -62,10 +66,12 @@ private:
     QFile pathFile;
     bool fileExists;
     QList<Image> imageList;
+    QList<Image> searchList;
     QSqlDatabase db;
     QSqlQuery addImage;
     QSqlQuery deleteUnsaved;
     QSqlQueryModel imageListModel;
+    QSqlQueryModel searchListModel;
     QList<bool>saved;
     int curRow;
 
