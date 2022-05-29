@@ -15,6 +15,7 @@
 #include <QSqlRelationalDelegate>
 #include <QListWidgetItem>
 #include <QItemSelectionModel>
+#include <QTranslator>
 using namespace std;
 
 QT_BEGIN_NAMESPACE
@@ -38,6 +39,7 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+
 
 private slots:
     void on_selectImpushButton_clicked();
@@ -68,6 +70,13 @@ private slots:
 
     void on_backButton_clicked();
 
+    void on_actionHungarian_2_triggered();
+
+    void on_actionSpanish_triggered();
+
+
+
+    void on_actionEnglish_2_triggered();
 
 private:
     Ui::MainWindow *ui;
@@ -86,6 +95,11 @@ private:
     QItemSelectionModel *selectionModel;
     QList<bool>saved;
     int curRow;
+    //for translator
+    QTranslator trans;
+    QTranslator transQt;
+    QString currLang;
+    QString langPath;
 
     QSqlTableModel *imageTableModel;
 
@@ -95,5 +109,12 @@ private:
     void fillIamgeList(bool init=false);
     void imageDataChanged(const QModelIndex &topLeft,const QModelIndex &bottomRight);
     void rowChanged(const QModelIndex &current, const QModelIndex &previous);
+    //loads a language by the given language shortcut
+    void loadLanguage(const QString &rLanguage);
+    //creates language menu
+    void createLanguageMenu(void);
+    void switchTranslator(QTranslator& translator, const QString& filename);
+
+
 };
 #endif // MAINWINDOW_H

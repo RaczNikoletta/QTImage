@@ -25,3 +25,6 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 RESOURCES += \
     images.qrc
+
+TRANSLATIONS = languages/Translation_es.ts  languages/Translation_hu.ts languages/Translation_en.ts
+
