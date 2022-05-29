@@ -311,7 +311,7 @@
     <property name="title">
      <string>Settings</string>
     </property>
-    <widget class="QMenu" name="menuLanguage_2">
+    <widget class="QMenu" name="menuLanguage">
      <property name="title">
       <string>Language</string>
      </property>
@@ -330,7 +330,7 @@
      <addaction name="actionSunny_2"/>
      <addaction name="actionBlue_2"/>
     </widget>
-    <addaction name="menuLanguage_2"/>
+    <addaction name="menuLanguage"/>
     <addaction name="menuStyle_2"/>
    </widget>
    <addaction name="menuSettings"/>

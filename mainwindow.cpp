@@ -6,6 +6,7 @@
 #include <fstream>
 #include <QVBoxLayout>
 #include <QCommonStyle>
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -20,6 +21,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->backButton->setIcon(style.standardIcon(QStyle::SP_ArrowLeft));
     ui->nextButton->setIcon(style.standardIcon(QStyle::SP_ArrowRight));
     fillIamgeList(true);
+    //createLanguageMenu();
 
 
     addImage=QSqlQuery(db);
@@ -50,6 +52,7 @@ MainWindow::MainWindow(QWidget *parent)
 
    connect(selectionModel,&QItemSelectionModel::currentChanged,this,&MainWindow::rowChanged);
    connect(imageTableModel,&QSqlTableModel::dataChanged,this,&MainWindow::imageDataChanged);
+
 
    searchListModel.setHeaderData(0,Qt::Horizontal,"Path");
    searchListModel.setHeaderData(1,Qt::Horizontal,"Tag");
@@ -450,7 +453,73 @@ void MainWindow::rowChanged(const QModelIndex &current, const QModelIndex &previ
 
 
 
+void MainWindow::switchTranslator(QTranslator& translator, const QString& filename) {
+     //qDebug() << "switchTranslator";
+ if(!currLang.isEmpty())
+ {
+ // remove the old translator
+ qApp->removeTranslator(&translator);
+ //qDebug() << "curr lang is not empty";
+ }
+
+ // load the new translator
+QString path = QApplication::applicationDirPath();
+    path.append("/languages/");
+    //qDebug() << path;
+ if(translator.load(path + filename)){ //Here Path and Filename has to be entered because the system didn't find the QM Files else
+  qApp->installTranslator(&translator);
+  ui->retranslateUi(this);
+  //qDebug() << "Translator installed";
+ }if(!translator.load(path + filename))
+ {
+     //: No such language to load
+     //QMessageBox::critical(this, tr("Language not found"), tr("Language file Translation_%1.qm not found").arg(currLang));
+     //qDebug() << "Translation qm not found";
+   if (!currLang.isEmpty())
+                 {
+                     translator.load("languages/Translation_"+currLang+".qm");
+                     qApp->installTranslator(&translator);
+                 }
+ }
+}
+
+void MainWindow::loadLanguage(const QString& rLanguage) {
+    //qDebug() << "loadLanguage curr" + currLang+ " rlang: " +rLanguage;
+
+ if(currLang != rLanguage) {
+  currLang = rLanguage;
+  QLocale locale = QLocale(currLang);
+  QLocale::setDefault(locale);
+  //qDebug() << "not the same language";
+  QString languageName = QLocale::languageToString(locale.language());
+  switchTranslator(trans, QString("Translation_%1.qm").arg(rLanguage));
+  switchTranslator(transQt, QString("qt_%1.qm").arg(rLanguage));
+  //ui.statusBar->showMessage(tr("Current Language changed to %1").arg(languageName));
+ }
+}
 
 
 
+
+
+
+
+
+void MainWindow::on_actionHungarian_2_triggered()
+{
+
+    loadLanguage("hu");
+}
+
+
+void MainWindow::on_actionSpanish_triggered()
+{
+    loadLanguage("es");
+}
+
+
+void MainWindow::on_actionEnglish_2_triggered()
+{
+    loadLanguage("en");
+}
 
