@@ -43,6 +43,11 @@ MainWindow::MainWindow(QWidget *parent)
     appSettings->beginGroup("Default");
     appSettings->endGroup();
     appSettings->endGroup();
+    appSettings->beginGroup("styles");
+    appSettings->beginGroup("Compact");
+    appSettings->setValue("label-size",ui->picturelabel->size()/1.3);
+    appSettings->endGroup();
+    appSettings->endGroup();
 
 
    imageTableModel = new QSqlTableModel(this,db);
@@ -400,6 +405,25 @@ void MainWindow::rowChanged(const QModelIndex &current, const QModelIndex &previ
         }
         ui->picturelabel->setPixmap(pixmap.scaled(ui->picturelabel->size(), Qt::KeepAspectRatio));
         ui->picturelabel->setAlignment(Qt::AlignCenter);
+        if(compactOn){
+            if(curRow>=1){
+            QPixmap pixleft(imageList.at(current.row()-1).path);
+            ui->imageLeft->setPixmap(pixleft.scaled(ui->imageLeft->size(),Qt::KeepAspectRatio));
+            ui->imageLeft->setAlignment(Qt::AlignCenter);
+            }else
+            {
+                ui->imageLeft->clear();
+            }
+            if(curRow<=imageList.size()-2)
+            {
+                QPixmap pixright(imageList.at(current.row()+1).path);
+                ui->imageRight->setPixmap(pixright.scaled(ui->imageRight->size(),Qt::KeepAspectRatio));
+                ui->imageRight->setAlignment(Qt::AlignCenter);
+            }else
+            {
+                ui->imageRight->clear();
+            }
+        }
     }
     else{
         ui->tagLabel->clear();
@@ -429,6 +453,7 @@ QString path = QApplication::applicationDirPath();
   ui->pushButton_3->adjustSize();
   ui->selectImpushButton->adjustSize();
   ui->label_4->adjustSize();
+  ui->label_5->adjustSize();
  }if(!translator.load(path + filename))
  {
    if (!currLang.isEmpty())
@@ -489,7 +514,7 @@ void MainWindow::zoom()
     QSize basesize = ui->picturelabel->size();
     QPixmap pixmap(imageList.at(curRow).path);
     ui->picturelabel->setPixmap(pixmap.scaled(basesize*2));
-    ui->picturelabel->resize(ui->picturelabel->size());
+    //ui->picturelabel->resize(ui->picturelabel->size());
     zoomed =1;
 
 
@@ -551,10 +576,10 @@ void MainWindow::on_actionEnglish_2_triggered()
 }
 
 
-void MainWindow::on_actionDark_2_triggered()
+void MainWindow::on_actionBlue_3_triggered()
 {
     appSettings->beginGroup("styles");
-    QString profileName = ui->actionDark_2->text();
+    QString profileName = ui->actionBlue_3->text();
     appSettings->beginGroup("Dark");
     QColor color=appSettings->value("background-color").value<QColor>();
     QColor selection = appSettings->value("selection-color").value<QColor>();
@@ -564,14 +589,55 @@ void MainWindow::on_actionDark_2_triggered()
 }
 
 
-void MainWindow::on_actionDefault_2_triggered()
+void MainWindow::on_actionDefault_3_triggered()
 {
     appSettings->beginGroup("styles");
-    QString profileName = ui->actionDefault_2->text();
-    appSettings->beginGroup(profileName);
+    appSettings->beginGroup(ui->actionDefault_3->text());
     ui->tabWidget->setStyleSheet(QString(""));
     appSettings->endGroup();
     appSettings->endGroup();
 
+}
+
+void MainWindow::on_actionCompact_triggered()
+{
+    appSettings->beginGroup("styles");
+    appSettings->beginGroup(ui->actionCompact->text());
+    //qDebug() << ui->actionCompact->text();
+    QPixmap pixmap(imageList.at(curRow).path);
+    QSize size = appSettings->value("label-size").value<QSize>();
+    //qDebug() << size.isValid();
+    ui->picturelabel->setPixmap(pixmap.scaled(size,Qt::KeepAspectRatio));
+    ui->picturelabel->resize(size);
+    ui->picturelabel->setAlignment(Qt::AlignCenter);
+    appSettings->endGroup();
+    appSettings->endGroup();
+
+    if(curRow>=1){
+
+     QPixmap pixmap2(imageList.at(curRow-1).path);
+     ui->imageLeft->setPixmap(pixmap2.scaled(size));
+      ui->imageLeft->setAlignment(Qt::AlignCenter);
+    }
+
+    if(curRow<=imageList.size()-2){
+     QPixmap pixmap3(imageList.at(curRow+1).path);
+     ui->imageRight->setPixmap(pixmap3.scaled(size));
+      ui->imageRight->setAlignment(Qt::AlignCenter);
+    }
+
+    compactOn = true;
+
+}
+
+void MainWindow::on_actionDefault_4_triggered()
+{
+    ui->imageLeft->clear();
+    ui->imageRight->clear();
+    QPixmap mainpix(imageList.at(curRow).path);
+    ui->picturelabel->setPixmap(mainpix.scaled(ui->picturelabel->size(),Qt::KeepAspectRatio));
+    ui->picturelabel->resize(ui->picturelabel->size()*1.3);
+    ui->picturelabel->setAlignment(Qt::AlignCenter);
+    compactOn = false;
 }
 

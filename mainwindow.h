@@ -81,9 +81,13 @@ private slots:
 
     void on_actionEnglish_2_triggered();
 
-    void on_actionDefault_2_triggered();
+    void on_actionDefault_3_triggered();
 
-    void on_actionDark_2_triggered();
+    void on_actionBlue_3_triggered();
+
+    void on_actionCompact_triggered();
+
+    void on_actionDefault_4_triggered();
     void showMenu(const QPoint &pos);
 
     void showWindow();
@@ -122,6 +126,7 @@ private:
     QStringList styles;
     //-1 if reduced 1 if zoomed
     int zoomed=0;
+    bool compactOn = false;
 
 
     void openDatabase(const QString &filename);
