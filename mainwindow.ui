@@ -333,8 +333,6 @@
      </property>
      <addaction name="actionDefault_2"/>
      <addaction name="actionDark_2"/>
-     <addaction name="actionSunny_2"/>
-     <addaction name="actionBlue_2"/>
     </widget>
     <addaction name="menuLanguage"/>
     <addaction name="menuStyle_2"/>
@@ -389,7 +387,7 @@
   </action>
   <action name="actionDark_2">
    <property name="text">
-    <string>Dark</string>
+    <string>Blue</string>
    </property>
   </action>
   <action name="actionSunny_2">

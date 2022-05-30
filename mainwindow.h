@@ -35,8 +35,14 @@ class MainWindow : public QMainWindow
             category(category),
             tag(tag),
             comment(comment)
+
+
         {}
     };
+
+
+
+
 
 public:
     MainWindow(QWidget *parent = nullptr);
@@ -53,9 +59,6 @@ private slots:
 
     void on_listView_clicked(const QModelIndex &index);
 
-
-
-    //void on_listWidget_currentRowChanged(int currentRow);
 
     void on_pushButton_2_clicked();
 
@@ -81,12 +84,18 @@ private slots:
     void on_actionDefault_2_triggered();
 
     void on_actionDark_2_triggered();
+    void showMenu(const QPoint &pos);
+
+    void showWindow();
+
+    //imagesizes
+    void zoom();
+    void reduce();
+    void original();
 
 private:
     Ui::MainWindow *ui;
     QString selectedImagePath="";
-    QStringList list;
-    QStringListModel *model;
     QFile pathFile;
     bool fileExists;
     QList<Image> imageList;
@@ -106,9 +115,13 @@ private:
     QString currLang;
     QString langPath;
 
+    QAction *zoomin;
+    QAction *reduced;
     QSqlTableModel *imageTableModel;
     QSettings *appSettings;
     QStringList styles;
+    //-1 if reduced 1 if zoomed
+    int zoomed=0;
 
 
     void openDatabase(const QString &filename);
