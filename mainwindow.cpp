@@ -12,17 +12,14 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
-    //ui->listView->setSelectionMode(QAbstractItemView::ExtendedSelection); //you can select any number of items
+
     model = new QStringListModel(this);
-    //readFromFile();
     ui->setupUi(this);
     openDatabase("db.sqlite");
     QCommonStyle style;
     ui->backButton->setIcon(style.standardIcon(QStyle::SP_ArrowLeft));
     ui->nextButton->setIcon(style.standardIcon(QStyle::SP_ArrowRight));
     fillIamgeList(true);
-    //createLanguageMenu();
-
 
     addImage=QSqlQuery(db);
     addImage.prepare("INSERT INTO image (path, tag, comment) VALUES (:path, :tag, :comment)");
@@ -30,16 +27,24 @@ MainWindow::MainWindow(QWidget *parent)
     deleteUnsaved=QSqlQuery(db);
     deleteUnsaved.prepare("DELETE FROM image WHERE path = :path");
 
-    /*addImage.bindValue(":path","random");
-    addImage.bindValue(":tag", "tag");
-    addImage.bindValue(":comment", "comment");
-                     if (addImage.exec())
-                     {
-                     }
-                     else
-                     {
-                         qDebug() << addImage.lastError();
-                     }*/
+    updateQ=QSqlQuery(db);
+    updateQ.prepare("UPDATE image SET tag = :tag, category = :category, comment = :comment where path = :path");
+
+    appSettings=new QSettings("Qttargy", "imageViewer", this);
+
+    appSettings->beginGroup("styles");
+    appSettings->beginGroup("Dark");
+    appSettings->setValue("background-color",QColor(0, 85, 255));
+    appSettings->setValue("selection-color",QColor(170, 0, 255));
+    styles=appSettings->childGroups();
+    styles.sort();
+    appSettings->endGroup();
+    appSettings->endGroup();
+    appSettings->beginGroup("styles");
+    appSettings->beginGroup("Default");
+    appSettings->endGroup();
+    appSettings->endGroup();
+
 
    imageTableModel = new QSqlTableModel(this,db);
    imageTableModel->setTable("image");
@@ -57,30 +62,27 @@ MainWindow::MainWindow(QWidget *parent)
    searchListModel.setHeaderData(0,Qt::Horizontal,"Path");
    searchListModel.setHeaderData(1,Qt::Horizontal,"Tag");
    searchListModel.setHeaderData(2,Qt::Horizontal,"Comment");
-   //ui->searchList->setModel(&searchListModel);
-   //connect(imageTableModel,&QSqlTableModel::dataChanged,this,&MainWindow::imageDataChanged);
-   //model->setStringList(list);
-    //ui->listView->setModel(model);
 }
 
 MainWindow::~MainWindow()
 {
-    for(int i=0;i<saved.size();i++)
+    for(int i=0;i<imageList.size();i++)
     {
         if(saved[i]==false)
         {
             deleteUnsaved.bindValue(":path",imageList[i].path);
             if(deleteUnsaved.exec()){
-                qDebug() << "Delete ok ";
-                fillIamgeList();
-                imageTableModel->select();
+                qDebug() << "destructor Delete ok ";
+                //fillIamgeList();
+                //imageTableModel->select();
             }else{
-                qDebug() << "Delete not ok " << deleteUnsaved.lastError();
+                qDebug() << "destructor Delete not ok " << deleteUnsaved.lastError();
 
         }
     }
     }
     db.close();
+    delete appSettings;
     delete ui;
 }
 
@@ -110,6 +112,7 @@ void MainWindow::on_selectImpushButton_clicked()
 void MainWindow::saveToDatabase(QString file)
 {
     addImage.bindValue(":path",file);
+    addImage.bindValue(":category","");
     addImage.bindValue(":tag","");
     addImage.bindValue(":comment","");
 
@@ -122,32 +125,6 @@ void MainWindow::saveToDatabase(QString file)
     }
 }
 
-void MainWindow::deleteFromFile(QString text)
-{
-
-    const QString path("imagePaths.txt");
-       QFile pathFile(path);
-       if(pathFile.open(QIODevice::ReadWrite | QIODevice::Text)){
-           //qDebug() << "open";
-           QString s;
-           QTextStream textStream(&pathFile);
-           while(!textStream.atEnd()){
-               //qDebug() << "in while";
-               QString line = textStream.readLine();
-                   if(line !=text){
-                       s.append(line+"\n");
-                       QModelIndex index = model->index(model->rowCount()-1);
-                       model->setData(index,line);
-                   }
-                   //qDebug() << line;
-               }
-
-       pathFile.resize(0);
-       textStream << s;
-       pathFile.close();
-       }
-
-}
 
 
 void MainWindow::on_pushButton_clicked()
@@ -170,6 +147,7 @@ void MainWindow::on_deleteButton_clicked()
     qDebug() << imageList[index.row()].path;
     if(deleteUnsaved.exec()){
         qDebug() << "Delete ok ";
+        saved[curRow]=false;
         fillIamgeList();
         imageTableModel->select();
     }else{
@@ -229,7 +207,7 @@ void MainWindow::initializeDatabase()
     {
         query.exec("DROP TABLE " + tablename);
     }
-    if(!query.exec("CREATE TABLE image (path VARCHAR(100) PRIMARY KEY, tag TEXT, comment TEXT)"))
+    if(!query.exec("CREATE TABLE image (path VARCHAR(100) PRIMARY KEY,category TEXT, tag TEXT, comment TEXT)"))
     {
         qDebug() << "ERROR create image table" << query.lastError();
     }
@@ -248,6 +226,7 @@ void MainWindow::fillIamgeList(bool init)
     {
 
         imageList.push_back(Image(query.value("path").toString(),
+                                  query.value("category").toString(),
                                   query.value("tag").toString(),
                                   query.value("comment").toString()));
     }
@@ -268,69 +247,26 @@ void MainWindow::imageDataChanged(const QModelIndex &,const QModelIndex &)
 }
 
 
-/*void MainWindow::on_listWidget_currentRowChanged(int currentRow)
-{
-    if(currentRow!=-1){
-        ui->tagLabel->setText(imageList.at(currentRow).tag);
-        ui->commentLabel->setText(imageList.at(currentRow).comment);
-    }
-    else{
-        ui->tagLabel->clear();
-        ui->commentLabel->clear();
-       }
-
-
-}*/
 
 
 void MainWindow::on_pushButton_2_clicked()
 {
-    deleteUnsaved.prepare("UPDATE image SET tag = :tag, comment = :comment where path = :path");
-    deleteUnsaved.bindValue(":tag",ui->tagLabel->text());
-    deleteUnsaved.bindValue(":comment",ui->commentLabel->text());
-    deleteUnsaved.bindValue(":path",imageList.at(curRow).path);
-    if(deleteUnsaved.exec())
+    updateQ.bindValue(":tag",ui->tagLabel->text());
+    updateQ.bindValue(":category",ui->categoryLabel->text());
+    updateQ.bindValue(":comment",ui->commentLabel->text());
+    updateQ.bindValue(":path",imageList.at(curRow).path);
+    if(updateQ.exec())
     {
       qDebug() << "DB updated successfully";
       fillIamgeList();
       imageTableModel->select();
     }else
     {
-        qDebug () << "DB update failed " << deleteUnsaved.lastError();
+        qDebug () << "DB update failed " << updateQ.lastError();
     }
 }
 
 
-void MainWindow::on_lineEdit_textChanged(const QString &arg1)
-{
-    /*QMutableListIterator<Image> i(imageList);
-    while(i.hasNext())
-    {
-        if(i.next().tag.contains(ui->lineEdit->text()))
-        {
-            qDebug () << "Remove: " << i.next().tag;
-            i.remove();
-            for(int j=0;j<imageList.size();j++)
-            {
-                qDebug () << "Tag: " << imageList.at(j).tag;
-            }
-
-        }else
-        {
-            //fillIamgeList();
-            //imageTableModel->select();
-        }
-    }
-
-    while(i.hasNext())
-    {
-        tempList.push_back(i.next().path);
-    }
-    model->setStringList(tempList);
-    ui->listView->setModel(model);
-
-    //imageTableModel->select();*/
-}
 
 
 void MainWindow::on_lineEdit_textEdited(const QString &arg1)
@@ -339,7 +275,7 @@ void MainWindow::on_lineEdit_textEdited(const QString &arg1)
     ui->listWidget->clear();
     QSqlQuery query(db);
     //int i =0;
-    query.prepare("SELECT * FROM image WHERE path LIKE :argum or tag LIKE :argum or comment LIKE :argum");
+    query.prepare("SELECT * FROM image WHERE path LIKE :argum or category LIKE:argum or tag LIKE :argum or comment LIKE :argum");
     query.bindValue(":argum",QString("%%1%").arg(arg1));
     QString toFind = QString("%%1%").arg(arg1);
     //searchListModel.setQuery("SELECT * FROM image WHERE path LIKE '"+QString("%%1%").arg(arg1)+"' or tag LIKE '"+QString("%%1%").arg(arg1)+"' or comment LIKE "+QString("%%1%").arg(arg1)+"");
@@ -351,8 +287,9 @@ void MainWindow::on_lineEdit_textEdited(const QString &arg1)
         //qDebug() << i;
         ui->listWidget->addItem(query.value("path").toString());
         searchList.push_back(Image(query.value("path").toString(),
-                                  query.value("tag").toString(),
-                                  query.value("comment").toString()));
+                                   query.value("category").toString(),
+                                   query.value("tag").toString(),
+                                   query.value("comment").toString()));
     }
     }else
     {
@@ -437,6 +374,7 @@ void MainWindow::rowChanged(const QModelIndex &current, const QModelIndex &previ
 {
     if(current.row()!=-1){
         ui->tagLabel->setText(imageList.at(current.row()).tag);
+        ui->categoryLabel->setText(imageList.at(current.row()).category);
         ui->commentLabel->setText(imageList.at(current.row()).comment);
         curRow = current.row();
 
@@ -521,5 +459,35 @@ void MainWindow::on_actionSpanish_triggered()
 void MainWindow::on_actionEnglish_2_triggered()
 {
     loadLanguage("en");
+}
+
+
+void MainWindow::on_actionDark_2_triggered()
+{
+    appSettings->beginGroup("styles");
+    QString profileName = ui->actionDark_2->text();
+    appSettings->beginGroup("Dark");
+    QColor color=appSettings->value("background-color").value<QColor>();
+    QColor selection = appSettings->value("selection-color").value<QColor>();
+    //QString string=appSettings->value("text").toString();
+    //ui->commentLabel->setText(string);
+    //ui->commentLabel->setStyleSheet(QString("font: 75 20pt \"MS Shell Dlg 2\";\ncolor: ")+color.name()+";");
+    //ui->tabWidget->setStyleSheet(QString("backgorund-color: rgb(0, 0, 0);selection-color: rgb(170, 0, 255);"font: 9pt\ "Ravie\";"));
+     ui->tabWidget->setStyleSheet(QString("font: 7pt \"Ravie\";\nbackground-color:" +color.name()+";\nselection-color:"+selection.name()));
+    appSettings->endGroup();
+    appSettings->endGroup();
+}
+
+
+void MainWindow::on_actionDefault_2_triggered()
+{
+    appSettings->beginGroup("styles");
+    QString profileName = ui->actionDefault_2->text();
+    appSettings->beginGroup(profileName);
+    QColor color=appSettings->value("background-color").value<QColor>();
+    ui->tabWidget->setStyleSheet(QString(""));
+    appSettings->endGroup();
+    appSettings->endGroup();
+
 }
 

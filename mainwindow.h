@@ -16,6 +16,7 @@
 #include <QListWidgetItem>
 #include <QItemSelectionModel>
 #include <QTranslator>
+#include <QSettings>
 using namespace std;
 
 QT_BEGIN_NAMESPACE
@@ -28,9 +29,10 @@ class MainWindow : public QMainWindow
 
     struct Image
     {
-        QString path, tag, comment;
-        Image(const QString &path,const QString &tag= "",const QString &comment = ""):
+        QString path, category, tag, comment;
+        Image(const QString &path,const QString &category="",const QString &tag= "",const QString &comment = ""):
             path(path),
+            category(category),
             tag(tag),
             comment(comment)
         {}
@@ -44,7 +46,6 @@ public:
 private slots:
     void on_selectImpushButton_clicked();
     void saveToDatabase(QString file);
-    void deleteFromFile(QString text);
 
     void on_pushButton_clicked();
 
@@ -58,7 +59,6 @@ private slots:
 
     void on_pushButton_2_clicked();
 
-    void on_lineEdit_textChanged(const QString &arg1);
 
     void on_lineEdit_textEdited(const QString &arg1);
 
@@ -78,6 +78,10 @@ private slots:
 
     void on_actionEnglish_2_triggered();
 
+    void on_actionDefault_2_triggered();
+
+    void on_actionDark_2_triggered();
+
 private:
     Ui::MainWindow *ui;
     QString selectedImagePath="";
@@ -90,6 +94,7 @@ private:
     QSqlDatabase db;
     QSqlQuery addImage;
     QSqlQuery deleteUnsaved;
+    QSqlQuery updateQ;
     QSqlQueryModel imageListModel;
     QSqlQueryModel searchListModel;
     QItemSelectionModel *selectionModel;
@@ -102,6 +107,8 @@ private:
     QString langPath;
 
     QSqlTableModel *imageTableModel;
+    QSettings *appSettings;
+    QStringList styles;
 
 
     void openDatabase(const QString &filename);
