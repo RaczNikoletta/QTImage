@@ -75,6 +75,8 @@ MainWindow::MainWindow(QWidget *parent)
    searchListModel.setHeaderData(0,Qt::Horizontal,"Path");
    searchListModel.setHeaderData(1,Qt::Horizontal,"Tag");
    searchListModel.setHeaderData(2,Qt::Horizontal,"Comment");
+
+   mainLabelBase = ui->picturelabel->size();
 }
 
 MainWindow::~MainWindow()
@@ -151,7 +153,11 @@ void MainWindow::on_deleteButton_clicked()
     qDebug() << imageList[index.row()].path;
     if(deleteUnsaved.exec()){
         qDebug() << "Delete ok ";
-        saved[curRow]=false;
+        if(curRow<imageList.size()-1){
+        if(!saved[curRow+1]){
+            saved[curRow]=false;
+        }
+        }
         fillIamgeList();
         imageTableModel->select();
     }else{
@@ -394,6 +400,7 @@ void MainWindow::rowChanged(const QModelIndex &current, const QModelIndex &previ
             ui->label_3->hide();
             ui->label->hide();
             ui->label_4->hide();
+            ui->pushButton_2->hide();
         }else{
             ui->commentLabel->show();
             ui->tagLabel->show();
@@ -401,6 +408,7 @@ void MainWindow::rowChanged(const QModelIndex &current, const QModelIndex &previ
             ui->label_3->show();
             ui->label->show();
             ui->label_4->show();
+            ui->pushButton_2->show();
 
         }
         ui->picturelabel->setPixmap(pixmap.scaled(ui->picturelabel->size(), Qt::KeepAspectRatio));
@@ -511,10 +519,9 @@ void MainWindow::showWindow()
 
 void MainWindow::zoom()
 {
-    QSize basesize = ui->picturelabel->size();
     QPixmap pixmap(imageList.at(curRow).path);
-    ui->picturelabel->setPixmap(pixmap.scaled(basesize*2));
-    //ui->picturelabel->resize(ui->picturelabel->size());
+    ui->picturelabel->setPixmap(pixmap.scaled(mainLabelBase*2,Qt::KeepAspectRatio));
+    ui->picturelabel->resize(ui->picturelabel->size());
     zoomed =1;
 
 
@@ -522,18 +529,19 @@ void MainWindow::zoom()
 
 void MainWindow::reduce()
 {
-    QSize basesize = ui->picturelabel->size();
     QPixmap pixmap(imageList.at(curRow).path);
-    ui->picturelabel->setPixmap(pixmap.scaled(basesize/2));
+    ui->picturelabel->setPixmap(pixmap.scaled(mainLabelBase/2,Qt::KeepAspectRatio));
+    ui->picturelabel->resize(ui->picturelabel->size());
+
     zoomed = -1;
 
 }
 
 void MainWindow::original()
 {
-    QSize basesize = ui->picturelabel->size();
     QPixmap pixmap(imageList.at(curRow).path);
-    ui->picturelabel->setPixmap(pixmap.scaled(basesize));
+    ui->picturelabel->setPixmap(pixmap.scaled(ui->picturelabel->size(), Qt::KeepAspectRatio));
+    ui->picturelabel->setAlignment(Qt::AlignCenter);
     zoomed = 0;
 
 }

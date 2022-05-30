@@ -118,6 +118,7 @@ private:
     QTranslator transQt;
     QString currLang;
     QString langPath;
+    QSize mainLabelBase;
 
     QAction *zoomin;
     QAction *reduced;
