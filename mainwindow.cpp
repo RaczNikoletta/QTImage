@@ -12,10 +12,9 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
-
-    model = new QStringListModel(this);
     ui->setupUi(this);
     openDatabase("db.sqlite");
+    curRow = 0;
     QCommonStyle style;
     ui->backButton->setIcon(style.standardIcon(QStyle::SP_ArrowLeft));
     ui->nextButton->setIcon(style.standardIcon(QStyle::SP_ArrowRight));
@@ -34,7 +33,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     appSettings->beginGroup("styles");
     appSettings->beginGroup("Dark");
-    appSettings->setValue("background-color",QColor(0, 85, 255));
+    appSettings->setValue("background-color",QColor(107, 159, 255));
     appSettings->setValue("selection-color",QColor(170, 0, 255));
     styles=appSettings->childGroups();
     styles.sort();
@@ -52,11 +51,20 @@ MainWindow::MainWindow(QWidget *parent)
    imageTableModel->setHeaderData(1,Qt::Horizontal,"Tag");
    imageTableModel->setHeaderData(2,Qt::Horizontal,"Comment");
    imageTableModel->select();
+   //imageTableModel.
    ui->listView->setModel(imageTableModel);
    selectionModel = ui->listView->selectionModel();
 
+
+   ui->picturelabel->setContextMenuPolicy(Qt::CustomContextMenu);
+   connect(ui->picturelabel,SIGNAL(customContextMenuRequested(QPoint)),this,SLOT(showMenu(QPoint)));
+
    connect(selectionModel,&QItemSelectionModel::currentChanged,this,&MainWindow::rowChanged);
    connect(imageTableModel,&QSqlTableModel::dataChanged,this,&MainWindow::imageDataChanged);
+
+   ui->listView->setCurrentIndex(ui->listView->currentIndex().siblingAtRow(0));
+   imageTableModel->selectRow(0);
+   imageTableModel->select();
 
 
    searchListModel.setHeaderData(0,Qt::Horizontal,"Path");
@@ -98,14 +106,9 @@ void MainWindow::on_selectImpushButton_clicked()
         QPixmap pixmap(filename);
         ui->picturelabel->setPixmap(pixmap.scaled(ui->picturelabel->size(), Qt::KeepAspectRatio));
         ui->picturelabel->setAlignment(Qt::AlignCenter);
-        //model->insertRow(model->rowCount());
         saved.append(false);
         saveToDatabase(filename);
-        //imageTableModel.
 
-        //list.append(filename);
-        //QModelIndex index = model->index(model->rowCount()-1);
-        //model->setData(index,filename);
     }
 }
 
@@ -129,10 +132,6 @@ void MainWindow::saveToDatabase(QString file)
 
 void MainWindow::on_pushButton_clicked()
 {
-    /*foreach(const QModelIndex &index,
-            ui->listView->selectionModel()->selectedIndexes())
-        saveToFile(model->itemFromIndex(index)->text());
-        */ //selected elements can be more than one
     QModelIndex index = ui->listView->currentIndex();
     QString itemText = index.data(Qt::DisplayRole).toString();
     saved[index.row()] = true;
@@ -237,6 +236,8 @@ void MainWindow::fillIamgeList(bool init)
         {
             saved.append(true);
         }
+
+        //ui->listView->setCurrentIndex(ui->listView->);
     }
 }
 
@@ -380,6 +381,23 @@ void MainWindow::rowChanged(const QModelIndex &current, const QModelIndex &previ
 
         QString itemText = imageList.at(current.row()).path;
         QPixmap pixmap(itemText);
+        if(!saved[current.row()])
+        {
+            ui->commentLabel->hide();
+            ui->tagLabel->hide();
+            ui->categoryLabel->hide();
+            ui->label_3->hide();
+            ui->label->hide();
+            ui->label_4->hide();
+        }else{
+            ui->commentLabel->show();
+            ui->tagLabel->show();
+            ui->categoryLabel->show();
+            ui->label_3->show();
+            ui->label->show();
+            ui->label_4->show();
+
+        }
         ui->picturelabel->setPixmap(pixmap.scaled(ui->picturelabel->size(), Qt::KeepAspectRatio));
         ui->picturelabel->setAlignment(Qt::AlignCenter);
     }
@@ -397,22 +415,22 @@ void MainWindow::switchTranslator(QTranslator& translator, const QString& filena
  {
  // remove the old translator
  qApp->removeTranslator(&translator);
- //qDebug() << "curr lang is not empty";
  }
 
  // load the new translator
 QString path = QApplication::applicationDirPath();
     path.append("/languages/");
-    //qDebug() << path;
  if(translator.load(path + filename)){ //Here Path and Filename has to be entered because the system didn't find the QM Files else
   qApp->installTranslator(&translator);
   ui->retranslateUi(this);
-  //qDebug() << "Translator installed";
+  ui->pushButton->adjustSize();
+  ui->deleteButton->adjustSize();
+  ui->pushButton_2->adjustSize();
+  ui->pushButton_3->adjustSize();
+  ui->selectImpushButton->adjustSize();
+  ui->label_4->adjustSize();
  }if(!translator.load(path + filename))
  {
-     //: No such language to load
-     //QMessageBox::critical(this, tr("Language not found"), tr("Language file Translation_%1.qm not found").arg(currLang));
-     //qDebug() << "Translation qm not found";
    if (!currLang.isEmpty())
                  {
                      translator.load("languages/Translation_"+currLang+".qm");
@@ -421,18 +439,89 @@ QString path = QApplication::applicationDirPath();
  }
 }
 
+void MainWindow::showMenu(const QPoint &pos)
+{
+    QMenu men(this);
+    QAction *act = new QAction(tr("View in new window"),this);
+    connect(act,SIGNAL(triggered()),this,SLOT(showWindow()));
+    zoomin = new QAction(tr("Zoom in"),this);
+     connect(zoomin,SIGNAL(triggered()),this,SLOT(zoom()));
+    reduced = new QAction(tr("Reduce"),this);
+    connect(reduced,SIGNAL(triggered()),this,SLOT(reduce()));
+    QAction *orig = new QAction(tr("Original size"),this);
+      connect(orig,SIGNAL(triggered()),this,SLOT(original()));
+    men.addAction(act);
+    if(zoomed==0){
+    men.addAction(zoomin);
+    men.addAction(reduced);
+    }
+    if(zoomed==-1)
+    {
+       men.addAction(zoomin);
+       men.addAction(orig);
+    }else if(zoomed ==1)
+    {
+         men.addAction(reduced);
+         men.addAction(orig);
+    }
+    men.exec(mapToGlobal(QPoint(pos.x(),pos.y())));
+}
+
+void MainWindow::showWindow()
+{
+    QWidget *window = new QWidget;
+    QLabel *imageLabel = new QLabel;
+    QString itemText =imageList.at(curRow).path;
+    QPixmap pixmap(itemText);
+    imageLabel->setPixmap(pixmap);
+    imageLabel->setScaledContents(true);
+    imageLabel->setAlignment(Qt::AlignCenter);
+
+    QVBoxLayout *layout = new QVBoxLayout;
+    layout->addWidget(imageLabel);
+
+    window->setLayout(layout);
+    window->show();
+}
+
+void MainWindow::zoom()
+{
+    QSize basesize = ui->picturelabel->size();
+    QPixmap pixmap(imageList.at(curRow).path);
+    ui->picturelabel->setPixmap(pixmap.scaled(basesize*2));
+    ui->picturelabel->resize(ui->picturelabel->size());
+    zoomed =1;
+
+
+}
+
+void MainWindow::reduce()
+{
+    QSize basesize = ui->picturelabel->size();
+    QPixmap pixmap(imageList.at(curRow).path);
+    ui->picturelabel->setPixmap(pixmap.scaled(basesize/2));
+    zoomed = -1;
+
+}
+
+void MainWindow::original()
+{
+    QSize basesize = ui->picturelabel->size();
+    QPixmap pixmap(imageList.at(curRow).path);
+    ui->picturelabel->setPixmap(pixmap.scaled(basesize));
+    zoomed = 0;
+
+}
+
 void MainWindow::loadLanguage(const QString& rLanguage) {
-    //qDebug() << "loadLanguage curr" + currLang+ " rlang: " +rLanguage;
 
  if(currLang != rLanguage) {
   currLang = rLanguage;
   QLocale locale = QLocale(currLang);
   QLocale::setDefault(locale);
-  //qDebug() << "not the same language";
   QString languageName = QLocale::languageToString(locale.language());
   switchTranslator(trans, QString("Translation_%1.qm").arg(rLanguage));
   switchTranslator(transQt, QString("qt_%1.qm").arg(rLanguage));
-  //ui.statusBar->showMessage(tr("Current Language changed to %1").arg(languageName));
  }
 }
 
@@ -469,10 +558,6 @@ void MainWindow::on_actionDark_2_triggered()
     appSettings->beginGroup("Dark");
     QColor color=appSettings->value("background-color").value<QColor>();
     QColor selection = appSettings->value("selection-color").value<QColor>();
-    //QString string=appSettings->value("text").toString();
-    //ui->commentLabel->setText(string);
-    //ui->commentLabel->setStyleSheet(QString("font: 75 20pt \"MS Shell Dlg 2\";\ncolor: ")+color.name()+";");
-    //ui->tabWidget->setStyleSheet(QString("backgorund-color: rgb(0, 0, 0);selection-color: rgb(170, 0, 255);"font: 9pt\ "Ravie\";"));
      ui->tabWidget->setStyleSheet(QString("font: 7pt \"Ravie\";\nbackground-color:" +color.name()+";\nselection-color:"+selection.name()));
     appSettings->endGroup();
     appSettings->endGroup();
@@ -484,7 +569,6 @@ void MainWindow::on_actionDefault_2_triggered()
     appSettings->beginGroup("styles");
     QString profileName = ui->actionDefault_2->text();
     appSettings->beginGroup(profileName);
-    QColor color=appSettings->value("background-color").value<QColor>();
     ui->tabWidget->setStyleSheet(QString(""));
     appSettings->endGroup();
     appSettings->endGroup();
